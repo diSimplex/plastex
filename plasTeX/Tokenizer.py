@@ -268,6 +268,7 @@ class Tokenizer(object):
 
             if token == '\n':
                 self.lineNumber += 1
+                self.context.meta["lines"] += 1
 
             code = whichCode(token)
 
