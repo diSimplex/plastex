@@ -623,6 +623,10 @@ class Macro(Element):
                 macroargs.append(Argument('*modifier*', index, {'spec':item}))
                 index += 1
 
+            # Do not strip leading whitespace
+            elif item in '!':
+                argdict['stripLeadingWhitespace'] = False
+
             # Optional equals
             elif item in '=':
                 argdict.clear()
