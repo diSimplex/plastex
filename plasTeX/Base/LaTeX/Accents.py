@@ -30,6 +30,10 @@ class Accent(Command):
                     content[0]+self.middle_combining+content[1:]+self.combining)
 
     @property
+    def source(self):
+        return type(self).chars.get(self.textContent.strip(), None)
+
+    @property
     def textContent(self):
         """
         We need a customized textContent that doesn't look up
