@@ -152,6 +152,9 @@ class Macro(Element):
     # So we set the catcode to ensure correct behaviour.
     catcode = 0
 
+    # Whether or not to perform character substitutions
+    doCharSubs = True
+
     def persist(self, attrs=None):
         """
         Store attributes needed for cross-document links
@@ -474,6 +477,7 @@ class Macro(Element):
             return
 
         self.argSource = ''
+        self.argSources = {}
         arg = None
         try:
             for arg in self.arguments:
@@ -481,6 +485,7 @@ class Macro(Element):
                 output, source = tex.readArgumentAndSource(parentNode=self,
                                                            name=arg.name,
                                                            **arg.options)
+                self.argSources[arg.name] = source
                 self.argSource += source
                 self.attributes[arg.name] = output
                 self.postArgument(arg, output, tex)
@@ -622,6 +627,10 @@ class Macro(Element):
                 argdict.clear()
                 macroargs.append(Argument('*modifier*', index, {'spec':item}))
                 index += 1
+
+            # Do not strip leading whitespace
+            elif item in '!':
+                argdict['stripLeadingWhitespace'] = False
 
             # Optional equals
             elif item in '=':
@@ -789,6 +798,12 @@ class Macro(Element):
                     self.pop(i)
                 elif len(item) == 1 and item[0].isElementContentWhitespace:
                     self.pop(i)
+
+    def normalize(self,charsubs=None):
+        if self.doCharSubs:
+            super(Macro,self).normalize(self.ownerDocument.charsubs)
+        else:
+            super(Macro,self).normalize()
 
 class TeXFragment(DocumentFragment):
     """ Document fragment node """

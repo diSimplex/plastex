@@ -203,6 +203,9 @@ class Context(object):
         # Create a global namespace
         self.push()
 
+        # Meta information
+        self.meta = {'lines': 0}
+
         self.warnOnUnrecognized = True
 
         if load:
