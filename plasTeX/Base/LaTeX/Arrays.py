@@ -91,7 +91,7 @@ class Array(Environment):
     class EndRow(Command):
         """ End of a row """
         macroName = '\\' # type: Optional[str]
-        args = '* [ space ]' # type: str
+        args = '[ ! space ]' # type: str
 
         def invoke(self, tex):
             # Pop and push a new context for each row, this keeps

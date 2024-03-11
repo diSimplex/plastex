@@ -159,9 +159,13 @@ class EqnarrayStar(Array, MathEnvironmentPre, NoCharSubEnvironment):
             return res
 
     class ArrayCell(Array.ArrayCell):
+        doCharSubs = False
         @property
         def source(self):
             return '$\\displaystyle %s $' % sourceChildren(self, par=False)
+
+    class ArrayRow(Array.ArrayRow):
+        doCharSubs = False
 
 class eqnarray(EqnarrayStar):
     macroName = None
