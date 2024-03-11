@@ -204,7 +204,9 @@ class Renderable(object):
 
                 status.info(' ] ')
 
-                continue
+                # only continue when it is not supposed to propagate to output higher up
+                if "propagate" not in child.userdata or not child.userdata["propagate"]:
+                  continue
 
             # Append the resultant object to the output
             s.append(val)
