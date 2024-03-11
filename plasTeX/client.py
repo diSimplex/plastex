@@ -32,8 +32,20 @@ def collect_plastex_plugin_config(config):
         configFilePath = None
         for aFilePath in aPlugin.dist.files:
             aFilePath = '.'.join(aFilePath.parts)
-            if 'Config.py' in aFilePath or \
-               'ConfigPlasTeXPlugin.py' in aFilePath:
+            #
+            # We explicitly prefer a new style `'ConfigPlasTeXPlugin.py`
+            # to the old style `Renderers/<Name>/Config.py`
+            #
+            # IF there are both, then the new style `addConfig(config)`
+            # should explicitly call the old style `addConfig(config)`
+            #
+            # This allows all PlasTeX plugins to (re)configure their
+            # environment before any parsing takes place.
+            #
+            if 'ConfigPlasTeXPlugin.py' in aFilePath:
+                configFilePath = aFilePath.replace('.py', '')
+                break
+            if 'Config.py' in aFilePath:
                 configFilePath = aFilePath.replace('.py', '')
         if not configFilePath:
             continue
