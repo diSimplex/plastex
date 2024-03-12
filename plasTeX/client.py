@@ -21,13 +21,22 @@ from plasTeX.Config import defaultConfig
 log = getLogger()
 pluginLog = getLogger('plugin.loading')
 
+def convertLoggingListToDict(loggingList):
+  loggingDict = {}
+  try:
+    for i in range(len(loggingList)):
+      loggingDict[loggingList[i][0]] = loggingList[i][1]
+  except Exception:
+    pass
+  return loggingDict
+
 def list_installed_plastex_plugins():
     knownPlugins = []
     for anEntryPoint in entry_points(group='plastex.plugin'):
         knownPlugins.append(anEntryPoint.value)
     return knownPlugins
 
-def collect_plastex_plugin_config(config):
+def run_plastex_plugin_config(config, methodName, logUsable=False):
     for aPlugin in entry_points(group='plastex.plugin'):
         configFilePath = None
         for aFilePath in aPlugin.dist.files:
@@ -52,17 +61,24 @@ def collect_plastex_plugin_config(config):
         try:
             conf = importlib.import_module(configFilePath)
         except Exception:
-            print(f"Failed to load Plugin Options from {configFilePath}:")
+            print(f"Failed to load {configFilePath}:")
             print(traceback.format_exc(limit=-1))
+            print("  ignoring plugin")
             continue
 
-        if hasattr(conf, 'addConfig') and callable(getattr(conf, 'addConfig')):
-            print(f"Loading Plugin Options from: {configFilePath}")
+        if hasattr(conf, methodName) and \
+           callable(getattr(conf, methodName)):
+            if logUsable:
+              pluginLog.info(f"Running {methodName} from: {configFilePath}")
+            else:
+              print(f"Running {methodName} from: {configFilePath}")
             try:
-                conf.addConfig(config)
+                theMethod = getattr(conf, methodName)
+                theMethod(config)
             except Exception:
-                print(f"Failed to load Plugin Options from {configFilePath}:")
+                print(f"Failed to run {methodName} from {configFilePath}:")
                 print(traceback.format_exc(limit=-1))
+                print("  ignoring plugin")
 
 def collect_renderer_config(config):
     plastex_dir = os.path.dirname(os.path.realpath(plasTeX.__file__))
@@ -82,7 +98,7 @@ def main(argv):
 
     config = defaultConfig()
     collect_renderer_config(config)
-    collect_plastex_plugin_config(config)
+    run_plastex_plugin_config(config, 'addConfig')
 
     parser = ArgumentParser("plasTeX")
 
@@ -98,6 +114,10 @@ def main(argv):
     if data["config"] is not None:
         config.read(data["config"])
 
+    # We reproduce this call here to allow logging to take place as soon
+    # as possible (even before the (La)TeX files are parsed)
+    updateLogLevels(convertLoggingListToDict(data['logging']))
+
     if data['add-plugins'] :
         knownPlugins = list_installed_plastex_plugins()
         if not data['plugins']:
@@ -107,14 +127,15 @@ def main(argv):
             # but it seems that the argparse data places lists inside a list.
             data['plugins'][0].extend(knownPlugins)
 
+    run_plastex_plugin_config(data, 'updateCommandLineOptions', True)
+
     config.updateFromDict(data)
 
-    # We reproduce this call here to allow logging to take place as soon
-    # as possible (even before the (La)TeX files are parsed)
-    updateLogLevels(config['logging']['logging'])
     if data['add-plugins'] :
         knownPlugins = list_installed_plastex_plugins()
         pluginLog.info(f"Added PlasTeX plugins: {knownPlugins} ")
+
+    run_plastex_plugin_config(config, 'initPlugin', True)
 
     filename = data["file"]
 
