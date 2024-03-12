@@ -23,8 +23,11 @@ pluginLog = getLogger('plugin.loading')
 
 def convertLoggingListToDict(loggingList):
   loggingDict = {}
-  for i in range(len(loggingList)):
-    loggingDict[loggingList[i][0]] = loggingList[i][1]
+  try:
+    for i in range(len(loggingList)):
+      loggingDict[loggingList[i][0]] = loggingList[i][1]
+  except Exception:
+    pass
   return loggingDict
 
 def list_installed_plastex_plugins():
