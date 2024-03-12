@@ -21,6 +21,12 @@ from plasTeX.Config import defaultConfig
 log = getLogger()
 pluginLog = getLogger('plugin.loading')
 
+def convertLoggingListToDict(loggingList):
+  loggingDict = {}
+  for i in range(len(loggingList)):
+    loggingDict[loggingList[i][0]] = loggingList[i][1]
+  return loggingDict
+
 def list_installed_plastex_plugins():
     knownPlugins = []
     for anEntryPoint in entry_points(group='plastex.plugin'):
@@ -105,6 +111,10 @@ def main(argv):
     if data["config"] is not None:
         config.read(data["config"])
 
+    # We reproduce this call here to allow logging to take place as soon
+    # as possible (even before the (La)TeX files are parsed)
+    updateLogLevels(convertLoggingListToDict(data['logging']))
+
     if data['add-plugins'] :
         knownPlugins = list_installed_plastex_plugins()
         if not data['plugins']:
@@ -114,11 +124,10 @@ def main(argv):
             # but it seems that the argparse data places lists inside a list.
             data['plugins'][0].extend(knownPlugins)
 
+    run_plastex_plugin_config(data, 'updateCommandLineOptions', True)
+
     config.updateFromDict(data)
 
-    # We reproduce this call here to allow logging to take place as soon
-    # as possible (even before the (La)TeX files are parsed)
-    updateLogLevels(config['logging']['logging'])
     if data['add-plugins'] :
         knownPlugins = list_installed_plastex_plugins()
         pluginLog.info(f"Added PlasTeX plugins: {knownPlugins} ")
