@@ -27,7 +27,7 @@ def list_installed_plastex_plugins():
         knownPlugins.append(anEntryPoint.value)
     return knownPlugins
 
-def collect_plastex_plugin_config(config):
+def run_plastex_plugin_config(config, methodName, logUsable=False):
     for aPlugin in entry_points(group='plastex.plugin'):
         configFilePath = None
         for aFilePath in aPlugin.dist.files:
@@ -52,17 +52,24 @@ def collect_plastex_plugin_config(config):
         try:
             conf = importlib.import_module(configFilePath)
         except Exception:
-            print(f"Failed to load Plugin Options from {configFilePath}:")
+            print(f"Failed to load {configFilePath}:")
             print(traceback.format_exc(limit=-1))
+            print("  ignoring plugin")
             continue
 
-        if hasattr(conf, 'addConfig') and callable(getattr(conf, 'addConfig')):
-            print(f"Loading Plugin Options from: {configFilePath}")
+        if hasattr(conf, methodName) and \
+           callable(getattr(conf, methodName)):
+            if logUsable:
+              pluginLog.info(f"Running {methodName} from: {configFilePath}")
+            else:
+              print(f"Running {methodName} from: {configFilePath}")
             try:
-                conf.addConfig(config)
+                theMethod = getattr(conf, methodName)
+                theMethod(config)
             except Exception:
-                print(f"Failed to load Plugin Options from {configFilePath}:")
+                print(f"Failed to run {methodName} from {configFilePath}:")
                 print(traceback.format_exc(limit=-1))
+                print("  ignoring plugin")
 
 def collect_renderer_config(config):
     plastex_dir = os.path.dirname(os.path.realpath(plasTeX.__file__))
@@ -82,7 +89,7 @@ def main(argv):
 
     config = defaultConfig()
     collect_renderer_config(config)
-    collect_plastex_plugin_config(config)
+    run_plastex_plugin_config(config, 'addConfig')
 
     parser = ArgumentParser("plasTeX")
 
@@ -115,6 +122,8 @@ def main(argv):
     if data['add-plugins'] :
         knownPlugins = list_installed_plastex_plugins()
         pluginLog.info(f"Added PlasTeX plugins: {knownPlugins} ")
+
+    run_plastex_plugin_config(config, 'initPlugin', True)
 
     filename = data["file"]
 
