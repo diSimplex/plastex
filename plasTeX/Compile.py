@@ -10,6 +10,7 @@ from plasTeX.TeX import TeX
 from plasTeX.ConfigManager import *
 from plasTeX.Logging import getLogger, updateLogLevels
 from plasTeX.Renderers import Renderer
+from plasTeX.Plugins import runPlastexPluginConfig
 
 log = getLogger()
 pluginlog = getLogger('plugin.loading')
@@ -82,6 +83,12 @@ def parse(filename: str, config: ConfigManager) -> TeX:
             if os.path.basename(fname) == pauxname:
                 continue
             document.context.restore(fname, rname)
+
+    # Initialize any automatically discovered plugins
+    if config['general']['add-plugins']:
+        runPlastexPluginConfig(
+            config, 'initPlugin', texStream=tex, texDocument=document
+        )
 
     # Parse the document
     tex.parse()

@@ -383,7 +383,9 @@ class Context(object):
                                                 {'args': value})
             self.importMacros(macros)
 
-    def loadPythonPackage(self, document: plasTeX.TeXDocument, file_name: str, options: Optional[Dict] = None) -> bool:
+    def loadPythonPackage(
+        self, tex: TeX, file_name: str, options: Optional[Dict] = None
+    ) -> bool:
         """
         Load a Python package
 
@@ -393,7 +395,8 @@ class Context(object):
         among builtin packages.
 
         Required Arguments:
-        document -- the document currently being built.
+        tex -- the instance of the TeX engine to use for parsing
+            the LaTeX file, if needed.
         file_name -- the name of the file to load
 
         Keyword Arguments:
@@ -403,6 +406,7 @@ class Context(object):
         boolean indicating whether or not the package loaded successfully
 
         """
+        document = tex.ownerDocument
         config = document.config
         working_dir = document.userdata.get('working-dir', '')
         options = options or {}
@@ -494,6 +498,10 @@ class Context(object):
             status.info(' (loading package %s ' % imported.__file__)
             if hasattr(imported, 'ProcessOptions'):
                 imported.ProcessOptions(options, document) # type: ignore
+            if hasattr(imported, 'loadingPackage'):
+                imported.loadingPackage(
+                  config, tex, document, options, self
+                )
             assert imported.__file__
             self.importMacros(vars(imported))
             moduleini = os.path.splitext(imported.__file__)[0] + '.ini'
@@ -503,6 +511,32 @@ class Context(object):
             return True
         else:
             return False
+
+    def loadLaTeXPackage(self, tex: TeX, file_name: str, options: Optional[Dict] = None) -> bool:
+        """
+        Load a LaTeX package
+
+        LaTeX packages are found using kpsewhich.
+
+        Required Arguments:
+        tex -- the instance of the TeX engine to use for parsing
+            the LaTeX file, if needed.
+        file_name -- the name of the file to load
+
+        Keyword Arguments:
+        options -- the options given on the macro to pass to the package
+
+        Returns:
+        boolean indicating whether or not the package loaded successfully
+
+        """
+        result = tex.loadPackage(file_name, options)
+        try:
+            moduleini = os.path.join(os.path.dirname(tex.kpsewhich(file_name)),
+                                     os.path.basename(module) + '.ini')
+            self.loadINIPackage([packagesini, moduleini])
+        except OSError: pass
+        return result
 
     def loadPackage(self, tex: TeX, file_name: str, options: Optional[Dict] = None) -> bool:
         """
@@ -541,22 +575,16 @@ class Context(object):
         packagesini = os.path.join(os.path.dirname(plasTeX.Packages.__file__),
                                    os.path.basename(module) + '.ini')
 
-        if self.loadPythonPackage(tex.ownerDocument, file_name, options):
+        if self.loadPythonPackage(tex, file_name, options):
             return True
 
         log.warning('No Python version of %s was found' % file_name)
 
         # Try to load a LaTeX implementation
         if (config['general']['load-tex-packages'] or
-              module in config['general']['tex-packages']):
+            module in config['general']['tex-packages']):
             log.warning('Will now try to load a LaTeX implementation of %s' % file_name)
-            result = tex.loadPackage(file_name, options)
-            try:
-                moduleini = os.path.join(os.path.dirname(tex.kpsewhich(file_name)),
-                                         os.path.basename(module) + '.ini')
-                self.loadINIPackage([packagesini, moduleini])
-            except OSError: pass
-            return result
+            return self.loadLaTeXPackage(tex, file_name, options)
         return False
 
 
