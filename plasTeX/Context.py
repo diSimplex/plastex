@@ -532,6 +532,8 @@ class Context(object):
         """
         options = options or {}
         module = os.path.splitext(file_name)[0]
+        packagesini = os.path.join(os.path.dirname(plasTeX.Packages.__file__),
+                                   os.path.basename(module) + '.ini')
         result = tex.loadPackage(file_name, options)
         try:
             moduleini = os.path.join(os.path.dirname(tex.kpsewhich(file_name)),
@@ -573,9 +575,6 @@ class Context(object):
         # See if it has already been loaded
         if module in self.packages:
             return True
-
-        packagesini = os.path.join(os.path.dirname(plasTeX.Packages.__file__),
-                                   os.path.basename(module) + '.ini')
 
         if self.loadPythonPackage(tex, file_name, options):
             return True
