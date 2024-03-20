@@ -530,6 +530,8 @@ class Context(object):
         boolean indicating whether or not the package loaded successfully
 
         """
+        options = options or {}
+        module = os.path.splitext(file_name)[0]
         result = tex.loadPackage(file_name, options)
         try:
             moduleini = os.path.join(os.path.dirname(tex.kpsewhich(file_name)),
