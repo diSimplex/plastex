@@ -43,6 +43,7 @@ def load_renderer(rname: str, config: ConfigManager) -> Renderer:
         pass
 
     for plugin in config['general']['plugins'] or []:
+        pluginlog.debug(f"Looking for the {rname} renderer in {plugin}")
         try:
             return getattr(importlib.import_module(plugin + '.Renderers.' + rname),
                            'Renderer')()
@@ -64,6 +65,12 @@ def parse(filename: str, config: ConfigManager) -> TeX:
     # Instantiate the TeX processor
     tex = TeX(document, file=filename)
 
+    # Initialize any automatically discovered plugins
+    if config['general']['add-plugins']:
+        runPlastexPluginConfig(
+            config, 'initPlugin', texStream=tex, texDocument=document
+        )
+
     # Send log message to file "jobname.log" instead of console
     if config['files']['log']:
         tex.fileLogging()
@@ -83,12 +90,6 @@ def parse(filename: str, config: ConfigManager) -> TeX:
             if os.path.basename(fname) == pauxname:
                 continue
             document.context.restore(fname, rname)
-
-    # Initialize any automatically discovered plugins
-    if config['general']['add-plugins']:
-        runPlastexPluginConfig(
-            config, 'initPlugin', texStream=tex, texDocument=document
-        )
 
     # Parse the document
     tex.parse()

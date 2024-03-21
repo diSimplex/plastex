@@ -57,16 +57,15 @@ def main(argv):
     data = vars(data)
     if data["config"] is not None:
         config.read(data["config"])
+    config.updateFromDict(data)
 
     # We reproduce this call here to allow logging to take place as soon
     # as possible (even before the (La)TeX files are parsed)
     updateLogLevels(convertLoggingListToDict(data['logging']))
 
-    if data['add-plugins'] :
-        addPlugins(data)
-        runPlastexPluginConfig(data, 'updateCommandLineOptions')
-
-    config.updateFromDict(data)
+    if config['general']['add-plugins']:
+        addPlugins(config)
+        runPlastexPluginConfig(config, 'updateConfig')
 
     filename = data["file"]
 

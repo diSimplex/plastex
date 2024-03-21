@@ -15,18 +15,38 @@ from plasTeX.Logging import getLogger
 
 pluginLog = getLogger('plugin.loading')
 
-def listInstalledPlastexPlugins():
-    knownPlugins = []
-    for anEntryPoint in entry_points(group='plastex.plugin'):
-        knownPlugins.append(anEntryPoint.value)
-    return knownPlugins
+# We use a simple module level singleton to discover and sort all plugins
+# found in the `plastex.plugin` group of entry points
+
+# Each entry point in the `plastex.plugin` group can have an optional
+# float appended after a ':'. The default float is '50'. The
+# discovered plugins are sorted in ascending order by this optional float
+# value. (lowest floats will be loaded first; equal floats will then be
+# loaded in lexigraphical order).
+
+unsortedPlugins = []
+entryPoints = {}
+for anEntryPoint in entry_points(group='plastex.plugin'):
+    anEPvalue = anEntryPoint.value
+    if ':' in anEPvalue:
+        fields = anEPvalue.split(':')
+        anEPvalue = [float(fields[1]), fields[0]]
+    else:
+        anEPvalue = [50.0, anEPvalue]
+    unsortedPlugins.append(anEPvalue)
+    entryPoints[anEPvalue[1]] = anEntryPoint
+
+discoveredPlugins = []
+for aPlugin in sorted(unsortedPlugins):
+    discoveredPlugins.append(aPlugin[1])
+
 
 def runPlastexPluginConfig(config, methodName,
-    texStream=None, texDocument=None
-):
-    for aPlugin in entry_points(group='plastex.plugin'):
+                           texStream=None, texDocument=None
+                           ):
+    for aPlugin in discoveredPlugins:
         configFilePath = None
-        for aFilePath in aPlugin.dist.files:
+        for aFilePath in entryPoints[aPlugin].dist.files:
             aFilePath = '.'.join(aFilePath.parts)
             #
             # We explicitly prefer a new style `'ConfigPlasTeXPlugin.py`
@@ -55,14 +75,13 @@ def runPlastexPluginConfig(config, methodName,
 
         if hasattr(conf, methodName) and \
            callable(getattr(conf, methodName)):
-            if methodName == 'updateCommandLineOptions' or \
-               methodName == 'initPlugin' :
-              pluginLog.info(f"Running {methodName} from: {configFilePath}")
+            if methodName == 'initPlugin' or methodName == 'updateConfig':
+                pluginLog.info(f"Running {methodName} from: {configFilePath}")
             elif 'PLASTEX_LOG_PLUGIN_LOADING' in os.environ:
-              print(f"Running {methodName} from: {configFilePath}")
+                print(f"Running {methodName} from: {configFilePath}")
             try:
                 theMethod = getattr(conf, methodName)
-                if methodName == 'initPlugin' :
+                if methodName == 'initPlugin':
                     theMethod(config, texStream, texDocument)
                 else:
                     theMethod(config)
@@ -72,13 +91,13 @@ def runPlastexPluginConfig(config, methodName,
                 print(traceback.format_exc(limit=-1))
                 print("  ignoring plugin")
 
-def addPlugins(data) :
-    knownPlugins = listInstalledPlastexPlugins()
-    if not data['plugins']:
-        data['plugins'] = [knownPlugins]
-    else:
-        # NOTE: not sure why the extra `[0]` is needed...
-        # but it seems that the argparse data places lists inside a list.
-        data['plugins'][0].extend(knownPlugins)
-    knownPlugins = listInstalledPlastexPlugins()
-    pluginLog.info(f"Added PlasTeX plugins: {knownPlugins} ")
+
+def addPlugins(config):
+    pluginList = []
+    for aPlugin in discoveredPlugins:
+        pluginList.append(aPlugin)
+    # wrapping the pluginList in another list is required by the
+    # updateFromDict method
+    config.updateFromDict({'plugins' : [pluginList] })
+    pluginLog.info(f"Added PlasTeX plugins: {config['general']['plugins']} ")
+
