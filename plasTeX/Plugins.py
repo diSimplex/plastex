@@ -28,13 +28,14 @@ unsortedPlugins = []
 entryPoints = {}
 for anEntryPoint in entry_points(group='plastex.plugin'):
     anEPvalue = anEntryPoint.value
+    anEPlist = []
     if ':' in anEPvalue:
         fields = anEPvalue.split(':')
-        anEPvalue = [float(fields[1]), fields[0]]
+        anEPlist = [float(fields[1]), fields[0]]
     else:
-        anEPvalue = [50.0, anEPvalue]
-    unsortedPlugins.append(anEPvalue)
-    entryPoints[anEPvalue[1]] = anEntryPoint
+        anEPlist = [50.0, anEPvalue]
+    unsortedPlugins.append(anEPlist)
+    entryPoints[anEPlist[1]] = anEntryPoint
 
 discoveredPlugins = []
 for aPlugin in sorted(unsortedPlugins):
