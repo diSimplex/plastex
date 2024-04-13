@@ -996,6 +996,16 @@ class VerbatimEnvironment(NoCharSubEnvironment):
         self.ownerDocument.context.push(self)
         self.parse(tex)
         self.ownerDocument.context.setVerbatimCatcodes()
+
+        # We need to allow subclasses (such as fancyvrb Verbatim) to set
+        # the category codes given by their `commandchars` and
+        # `commentchar` options.
+
+        try:
+          self.setCatCodes()
+        except AttributeError:
+          pass
+
         tokens = [self]
 
         # Get the name of the currently expanding environment
