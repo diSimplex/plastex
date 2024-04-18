@@ -68,7 +68,8 @@ def parse(filename: str, config: ConfigManager) -> TeX:
     # Initialize any automatically discovered plugins
     if config['general']['add-plugins']:
         runPlastexPluginConfig(
-            config, 'initPlugin', texStream=tex, texDocument=document
+            config, 'initPlugin',
+            fileName=filename, texStream=tex, texDocument=document
         )
 
     # Send log message to file "jobname.log" instead of console

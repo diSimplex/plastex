@@ -43,7 +43,7 @@ for aPlugin in sorted(unsortedPlugins):
 
 
 def runPlastexPluginConfig(config, methodName,
-                           texStream=None, texDocument=None
+                           fileName=None, texStream=None, texDocument=None
                            ):
     for aPlugin in discoveredPlugins:
         configFilePath = None
@@ -83,7 +83,7 @@ def runPlastexPluginConfig(config, methodName,
             try:
                 theMethod = getattr(conf, methodName)
                 if methodName == 'initPlugin':
-                    theMethod(config, texStream, texDocument)
+                    theMethod(config, fileName, texStream, texDocument)
                 else:
                     theMethod(config)
 
