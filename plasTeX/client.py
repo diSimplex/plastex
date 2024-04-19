@@ -63,11 +63,11 @@ def main(argv):
     # as possible (even before the (La)TeX files are parsed)
     updateLogLevels(convertLoggingListToDict(data['logging']))
 
+    filename = data["file"]
+
     if config['general']['add-plugins']:
         addPlugins(config)
-        runPlastexPluginConfig(config, 'updateConfig')
-
-    filename = data["file"]
+        runPlastexPluginConfig(config, 'updateConfig', fileName=filename)
 
     run(filename, config)
 

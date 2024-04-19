@@ -84,6 +84,8 @@ def runPlastexPluginConfig(config, methodName,
                 theMethod = getattr(conf, methodName)
                 if methodName == 'initPlugin':
                     theMethod(config, fileName, texStream, texDocument)
+                elif methodName == 'updateConfig' :
+                    theMethod(config, fileName)
                 else:
                     theMethod(config)
 
