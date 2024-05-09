@@ -69,6 +69,8 @@ def main(argv):
         addPlugins(config)
         runPlastexPluginConfig(config, 'updateConfig', fileName=filename)
 
+    updateLogLevels(config['logging']['logging'])
+
     run(filename, config)
 
 def info(type, value, tb):
